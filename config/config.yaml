@@ -1,0 +1,15 @@
+query_params:
+  q: mlops
+  type:
+    - live-course
+    - on-demand-course
+  rows: 50
+  page: 1
+
+base_url: https://www.oreilly.com/search
+
+page_element_selector:
+  - a.MuiTypography-root.MuiTypography-link
+  - div.MuiTypography-root.MuiTypography-linkSmall.css-1b4pf4x
+  - a.MuiTypography-root.MuiTypography-linkSmall.css-7jr8vd
+  - span.MuiTypography-root.MuiTypography-cardFooter.css-1r46jut:nth-of-type(2)

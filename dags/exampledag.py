@@ -84,10 +84,10 @@ def example_astronauts():
         the API request results of the previous task, along with a
         greeting which is hard-coded in this example.
         """
-        craft = person_in_space["craft"]
-        name = person_in_space["name"]
-
-        print(f"{name} is currently in space flying on the {craft}! {greeting}")
+        for person in person_in_space["people"]:
+            craft = person["craft"]
+            name = person["name"]
+            print(f"{name} is currently in space flying on the {craft}! {greeting}")
 
     # Use dynamic task mapping to run the print_astronaut_craft task for each
     # Astronaut in space
