@@ -1,5 +1,5 @@
-# medium-articles-data-pipeline
-Extract medium articles on "MLOps" topic and load them in a db table
+# oreilly-courses-data-pipeline
+Extract Oreilly courses data on **MLOps** and load them in a postgres db table
 
 
 #### Astro Runtime includes the following pre-installed providers packages: https://www.astronomer.io/docs/astro/runtime-image-architecture#provider-packages

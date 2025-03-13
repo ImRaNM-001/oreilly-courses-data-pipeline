@@ -49,7 +49,6 @@ x-airflow-common:
   # In order to add custom dependencies or upgrade provider packages you can use your extended image.
   # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
   # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  # image: ${AIRFLOW_IMAGE_NAME:-quay.io/astronomer/astro-runtime:12.7.1}
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.5}
   # build: .
   environment:
@@ -129,6 +128,9 @@ services:
     restart: always
 
   airflow-webserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     command: webserver
     ports:
@@ -146,6 +148,9 @@ services:
         condition: service_completed_successfully
 
   airflow-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     command: scheduler
     healthcheck:
@@ -161,6 +166,9 @@ services:
         condition: service_completed_successfully
 
   airflow-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     command: celery worker
     healthcheck:
@@ -184,6 +192,9 @@ services:
         condition: service_completed_successfully
 
   airflow-triggerer:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     command: triggerer
     healthcheck:
@@ -199,6 +210,9 @@ services:
         condition: service_completed_successfully
 
   airflow-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     entrypoint: /bin/bash
     # yamllint disable rule:line-length
@@ -279,6 +293,9 @@ services:
   # or by explicitly targeted on the command line e.g. docker-compose up flower.
   # See: https://docs.docker.com/compose/profiles/
   flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
     <<: *airflow-common
     command: celery flower
     profiles:

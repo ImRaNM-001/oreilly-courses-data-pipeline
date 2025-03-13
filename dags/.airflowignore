@@ -1,8 +1,5 @@
-exampledag.py
-oreilly_courses.csv
-pw.py
-see_ml.html
-test_com.ipynb
-test_fetch_articles.py
+# Exclude all files
+*
 
-
+# Include specific file
+!app.py
