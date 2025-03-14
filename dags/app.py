@@ -96,11 +96,11 @@ def fetch_oreilly_courses_data():
                 course_info_list.append(each_link.inner_text())                        
             
             browser.close()
-        return course_info_list
+        return course_info_list                     
 
     # Task 2: Transform the data and create a table on postgres (transform)
     @task
-    def clean_course_data(title_list, authors_list, publisher_list, published_date_list):
+    def clean_course_data(title_list, authors_list, publisher_list, published_date_list) -> list[dict[str, object]]:
         # Remove the '\xa0' character and replace 'By' with 'By '
         authors_list = [author.replace('\xa0', '')
                         .replace('By', 'By ') 
@@ -111,48 +111,77 @@ def fetch_oreilly_courses_data():
                          len(authors_list), 
                          len(publisher_list), 
                          len(published_date_list))
+        
+        title_list.extend([None] * (max_length - len(title_list)))
+        authors_list.extend([None] * (max_length - len(authors_list)))
+        publisher_list.extend([None] * (max_length - len(publisher_list)))
         published_date_list.extend([None] * (max_length - len(published_date_list)))
 
-        # Create a dictionary of lists with the extracted data
-        courses_data_dict: dict[str, list[str | str]] = {                        
-            'Course Title': title_list,
-            'Author': authors_list,
-            'Publisher': publisher_list,
-            'Published Date': published_date_list
+        # Create a list of dictionaries with the extracted data (which is a list)
+        courses_data_list: list[dict[str, object]] = [{                        
+            'Course Title': title_list[_],
+            'Author': authors_list[_],
+            'Publisher': publisher_list[_],
+            'Published Date': published_date_list[_]
         }
+        for _ in range(max_length)
+    ]
 
-        # Check if the dictonary result is JSON serializable - to refrain Airflow throwing "<coroutine object" error
+        # Check if the "list of dictonaries" result is JSON serializable - to refrain Airflow throwing "<coroutine object" error
         try:
-            json.dumps(courses_data_dict)
+            json.dumps(courses_data_list)
             logging.info('clean_course_data() function returns a JSON serializable object')
 
         except TypeError as error:
             raise TypeError(f'clean_course_data() returned a non-serializable object: {error}')
-        return courses_data_dict
+        return courses_data_list                                    # Type of "courses_data_list" is: <class 'list'>
 
-    # Task 3: Insert data in table on postgres (load)
+    # Task 3: Insert data in table on postgres db (load)
     @task
-    def insert_courses_data_to_db(courses_data_dict):
-        if not courses_data_dict:
-            raise ValueError("No course information fetched from the website")
+    def insert_courses_data_to_db(courses_data_list):
+        if not courses_data_list:
+            raise ValueError('No course information fetched from the website')
+        
+        # Check: Ensure that courses_data_list is a "list of dictionaries"
+        if not isinstance(courses_data_list, list):
+            raise ValueError('courses_data_list: Expected a list of dictionaries')
+        
+        for course in courses_data_list:
+            if not isinstance(course, dict):
+                logging.info(f'Type of each course is: {type(course)}')
+                raise ValueError('Inside courses_data_list > each course should be a dictionary')
 
         postgres_hook = PostgresHook(postgres_conn_id = 'oreilly_courses_connection')
-        insert_query = """
-        INSERT INTO courses (course_title, authors, publisher, publisher_date)
-        VALUES (%s, %s, %s, %s)
-        """
-
-        # Prepare the data for bulk insertion
-        table_data_to_insert = [(course['Course Title'], 
-                        course['Author'], 
-                        course['Publisher'], 
-                        course['Publisher Date']) for course in courses_data_dict]
         
         try:
-            # Use executemany to insert multiple rows at once
-            postgres_hook.run(insert_query, 
-                            parameters = table_data_to_insert, 
-                            many = True)
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS courses(
+                course_id SERIAL PRIMARY KEY,
+                course_title VARCHAR(255) NOT NULL,
+                authors VARCHAR(255),
+                publisher VARCHAR(255),
+                published_date VARCHAR(255)
+            );
+            """
+            postgres_hook.run(create_table_sql)
+            logging.info('Courses table created successfully')
+        
+        except Exception as exception:
+            logging.error(f'Error creating table into PostgreSQL: {exception}')
+            raise
+
+        # Prepare the data for bulk insertion
+        table_data_to_insert = [
+            (course['Course Title'], 
+                course['Author'], 
+                course['Publisher'], 
+                course['Published Date']) for course in courses_data_list]
+        
+        try:
+            # Insert multiple rows at once to the table
+            postgres_hook.insert_rows(table = 'courses', 
+                                      rows = table_data_to_insert, 
+                                      target_fields = ['course_title', 'authors', 'publisher', 'published_date'])
             logging.info('Course Data inserted successfully to PostgreSQL db')
 
         except Exception as exception:
@@ -165,8 +194,8 @@ def fetch_oreilly_courses_data():
     publisher_list = fetch_course_data(config['page_element_selector'][2])
     published_date_list = fetch_course_data(config['page_element_selector'][3])
 
-    courses_data_dict = clean_course_data(title_list, authors_list, publisher_list, published_date_list)
-    insert_courses_data_to_db(courses_data_dict)
+    courses_data_list = clean_course_data(title_list, authors_list, publisher_list, published_date_list)
+    insert_courses_data_to_db(courses_data_list)
 
 # Instantiate the DAG
 dag = fetch_oreilly_courses_data()
