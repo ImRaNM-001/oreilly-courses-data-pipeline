@@ -13,8 +13,12 @@ Extract Oreilly courses data on **MLOps** and load them into a Postgres DB table
 ### 1. Install Airflow
 Follow the instructions from the official documentation: [How to install Airflow?](https://airflow.apache.org/docs/apache-airflow/stable/howto/docker-compose/index.html)
 
-### 2. Start the services
-Run the following command to start the services:
+### 2. Build and Start the services
+a) Run the following command to create a docker build:
+```sh
+docker compose build --no-cache
+```
+b) Run the following command to start the services:
 ```sh
 docker compose up
 ```
